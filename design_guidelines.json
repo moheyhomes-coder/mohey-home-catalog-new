@@ -1,0 +1,114 @@
+{
+  "theme": "Archetype 4: Swiss & High-Contrast",
+  "mode": "Hybrid (Light for Public Gallery, Dark for Admin Dashboard)",
+  "emotions": ["Premium", "Objective", "Urgent", "Functional"],
+  "colors": {
+    "public": {
+      "background": "#FDFDFD",
+      "text": "#0A0A0A",
+      "accent": "#FF2A2A",
+      "border": "#0A0A0A",
+      "muted": "#E5E5E5"
+    },
+    "admin": {
+      "background": "#0A0A0A",
+      "text": "#FFFFFF",
+      "card_bg": "#141414",
+      "accent": "#FF2A2A",
+      "success": "#00FF66",
+      "border": "rgba(255, 255, 255, 0.1)"
+    }
+  },
+  "typography": {
+    "heading_font": "Cabinet Grotesk",
+    "body_font": "IBM Plex Sans",
+    "heading_classes": "font-bold tracking-tighter uppercase",
+    "body_classes": "font-normal tracking-normal",
+    "scales": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl leading-tight",
+      "body": "text-base leading-relaxed",
+      "labels": "text-xs tracking-[0.2em] uppercase"
+    }
+  },
+  "layout_spacing": {
+    "public_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-t border-l border-[#0A0A0A]",
+    "public_grid_item": "border-r border-b border-[#0A0A0A] p-6 flex flex-col",
+    "admin_layout": "flex h-screen overflow-hidden bg-[#0A0A0A]",
+    "admin_sidebar": "w-64 border-r border-white/10 p-6 flex flex-col",
+    "admin_content": "flex-1 overflow-y-auto p-8 lg:p-12",
+    "padding_scale": "Use p-6, p-8, p-12 generously"
+  },
+  "components": {
+    "catalog_card": {
+      "container": "relative group flex flex-col h-full bg-[#FDFDFD] transition-colors hover:bg-gray-50",
+      "image_wrapper": "relative aspect-[4/5] w-full overflow-hidden mb-6 bg-gray-100",
+      "image": "object-cover w-full h-full transition-transform duration-500 group-hover:scale-105",
+      "content": "flex flex-col flex-grow justify-between gap-4",
+      "title": "text-xl font-bold uppercase tracking-tight",
+      "price": "text-lg font-medium",
+      "stock_badge": "inline-block px-2 py-1 text-xs border border-[#0A0A0A] uppercase tracking-wider font-bold",
+      "sold_out_overlay": "absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-10",
+      "sold_out_badge": "bg-[#FF2A2A] text-white px-4 py-2 text-sm uppercase tracking-[0.2em] font-bold"
+    },
+    "live_indicator": {
+      "container": "flex items-center gap-2 px-3 py-1 rounded-full border border-[#0A0A0A]",
+      "dot": "w-2 h-2 rounded-full bg-[#FF2A2A] animate-pulse",
+      "text": "text-xs uppercase tracking-[0.2em] font-bold"
+    },
+    "admin_stat_card": {
+      "container": "bg-[#141414] border border-white/10 p-6 flex flex-col gap-2",
+      "label": "text-xs uppercase tracking-[0.2em] text-white/60",
+      "value": "text-4xl font-bold tracking-tighter text-white"
+    },
+    "buttons": {
+      "primary": "bg-[#0A0A0A] text-white px-6 py-3 uppercase tracking-widest text-sm font-bold hover:bg-[#FF2A2A] transition-colors focus:ring-2 focus:ring-[#0A0A0A] focus:ring-offset-2",
+      "secondary": "border border-[#0A0A0A] px-6 py-3 uppercase tracking-widest text-sm font-bold hover:bg-[#0A0A0A] hover:text-white transition-colors"
+    }
+  },
+  "motion": {
+    "hover": "transition-transform duration-300 ease-out",
+    "fade_in": "animate-in fade-in duration-500",
+    "list_stagger": "use framer-motion for staggered entrance of catalog items"
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "sharp, minimalist, 1.5px stroke width"
+  },
+  "media": {
+    "image_urls": [
+      {
+        "url": "https://images.unsplash.com/photo-1631125915732-b98f8774f675?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwY2VyYW1pYyUyMHZhc2V8ZW58MHx8fHwxNzgyNTY1OTA3fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Textured round minimalist ceramic vase",
+        "category": "catalog_item"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1643569556871-91ec60671ed7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwY2VyYW1pYyUyMHZhc2V8ZW58MHx8fHwxNzgyNTY1OTA3fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Donut shaped minimalist ceramic vase",
+        "category": "catalog_item"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1771573753453-70e26aa92246?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwzfHxkZXNpZ25lciUyMGFjY2VudCUyMGNoYWlyfGVufDB8fHx8MTc4MjU2NTkwOHww&ixlib=rb-4.1.0&q=85",
+        "description": "Designer wooden accent chair with orange back",
+        "category": "catalog_item"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1618331833071-ce81bd50d300?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGNhbnZhcyUyMHBhaW50aW5nfGVufDB8fHx8MTc4MjU2NTkwOHww&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract canvas painting blue yellow white",
+        "category": "catalog_item"
+      }
+    ]
+  },
+  "testing": {
+    "rules": "All interactive and key informational elements MUST include a data-testid attribute to facilitate robust automated testing. Convention: kebab-case, role-based. Examples: data-testid='admin-login-button', data-testid='item-card-name', data-testid='share-catalog-button', data-testid='mark-sold-out-toggle', data-testid='catalog-item-stock'."
+  },
+  "instructions_to_main_agent": [
+    "1. Hybrid Design System: Build the public catalog as a Light-Themed, High-Contrast 'Art Gallery' grid using pure HTML/Tailwind. The grid should feel structural, using 1px black borders (border-collapse style). Conversely, build the Admin dashboard as a Dark-Themed, operational command center (deep black background, white text).",
+    "2. Auto-Updates & Real-Time Sync: Implement short polling or WebSockets. The UI must feature a 'Live' pulsing dot indicator in the header to communicate that the catalog is auto-updating in real time.",
+    "3. Sold-Out State Handling: When stock hits 0 (or admin manually toggles it), items must automatically update. The problem states 'auto deletes items that are sold out'. Ensure you either fully unmount the component with a Framer Motion fade-out, or apply a striking red 'SOLD OUT' overlay for a few seconds before unmounting them so users understand what happened.",
+    "4. Form & Input Strategy: Use Shadcn UI for the Admin forms, dialogs, and toggles. Heavily customize them to fit the dark theme. No murky grays; use strict #141414 card backgrounds and thin white/10 borders.",
+    "5. Typography: Use 'Cabinet Grotesk' for display/headings and 'IBM Plex Sans' for body content. Labels, stock counts, and buttons should be uppercase with wide tracking (tracking-[0.2em]).",
+    "6. Test IDs: Apply `data-testid` to all interactive elements unconditionally.",
+    "7. Copy Link: Implement the 'Share Catalog' functionality natively via clipboard API."
+  ]
+}
