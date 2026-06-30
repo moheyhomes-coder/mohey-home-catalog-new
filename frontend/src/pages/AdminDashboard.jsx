@@ -6,13 +6,17 @@ import { LiveIndicator } from "@/components/LiveIndicator";
 import { Logo } from "@/components/Logo";
 import { ItemForm } from "@/components/ItemForm";
 import { toast } from "sonner";
-import { Plus, LogOut, Pencil, Trash2, ExternalLink, X, Copy } from "lucide-react";
+import { Plus, LogOut, Pencil, Trash2, ExternalLink, X, Copy, Tag, MessageCircle, Save } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [collections, setCollections] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [settings, setSettings] = useState({ whatsapp_number: "", brand_name: "Mohey Home" });
+  const [whatsappInput, setWhatsappInput] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -20,12 +24,19 @@ export default function AdminDashboard() {
 
   const load = async () => {
     try {
-      const [itemsRes, colRes] = await Promise.all([
+      const [itemsRes, colRes, catRes, setRes] = await Promise.all([
         api.get("/admin/items"),
         api.get("/collections").catch(() => ({ data: [] })),
+        api.get("/categories").catch(() => ({ data: [] })),
+        api.get("/settings").catch(() => ({ data: {} })),
       ]);
       setItems(itemsRes.data);
       setCollections(colRes.data || []);
+      setCategories(catRes.data || []);
+      if (setRes.data) {
+        setSettings(setRes.data);
+        setWhatsappInput((s) => s || setRes.data.whatsapp_number || "");
+      }
     } catch (e) {
       if (e.response?.status === 401) navigate("/admin/login");
     } finally {
@@ -40,6 +51,38 @@ export default function AdminDashboard() {
       toast.success(`Collection "${data.name}" created`);
       return data;
     } catch (_) { toast.error("Failed to create collection"); return null; }
+  };
+
+  const createCategory = async (name) => {
+    try {
+      const { data } = await api.post("/admin/categories", { name });
+      setCategories((c) => c.find((x) => x.name === data.name) ? c : [...c, data]);
+      toast.success(`Category "${data.name}" added`);
+      return data;
+    } catch (_) { toast.error("Failed to add category"); return null; }
+  };
+
+  const deleteCategory = async (cat) => {
+    if (!window.confirm(`Delete category "${cat.name}"?`)) return;
+    try {
+      await api.delete(`/admin/categories/${cat.id}`);
+      setCategories((c) => c.filter((x) => x.id !== cat.id));
+      toast.success("Category removed");
+    } catch (_) { toast.error("Failed to delete category"); }
+  };
+
+  const saveWhatsApp = async () => {
+    setSavingSettings(true);
+    try {
+      const { data } = await api.patch("/admin/settings", { whatsapp_number: whatsappInput });
+      setSettings(data);
+      setWhatsappInput(data.whatsapp_number || "");
+      toast.success("WhatsApp number saved");
+    } catch (_) {
+      toast.error("Failed to save");
+    } finally {
+      setSavingSettings(false);
+    }
   };
 
   useEffect(() => {
@@ -175,6 +218,91 @@ export default function AdminDashboard() {
         ))}
       </section>
 
+      {/* Settings: WhatsApp + Categories */}
+      <section className="px-6 lg:px-10 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6 border-b border-white/10" data-testid="admin-settings-section">
+        {/* WhatsApp Number */}
+        <div className="border border-white/10 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageCircle className="w-4 h-4 text-[#25D366]" />
+            <h3 className="font-display text-sm font-black uppercase tracking-[0.15em]">WhatsApp Orders</h3>
+          </div>
+          <p className="text-[11px] text-white/50 leading-relaxed mb-3">
+            Customers will see a WhatsApp button on each product page that opens a pre-filled order message to this number.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="tel"
+              placeholder="+919876543210 (with country code)"
+              value={whatsappInput}
+              onChange={(e) => setWhatsappInput(e.target.value)}
+              data-testid="settings-whatsapp-input"
+              className="flex-grow bg-[#0A0A0A] border border-white/15 focus:border-white outline-none py-2.5 px-3 text-sm font-mono-px text-white"
+            />
+            <button
+              type="button"
+              onClick={saveWhatsApp}
+              disabled={savingSettings || whatsappInput === settings.whatsapp_number}
+              data-testid="settings-whatsapp-save"
+              className="bg-[#25D366] text-[#0A0A0A] px-4 py-2.5 text-[10px] tracking-[0.25em] uppercase font-bold hover:bg-white disabled:opacity-40 inline-flex items-center gap-1.5"
+            >
+              <Save className="w-3.5 h-3.5" /> Save
+            </button>
+          </div>
+          {settings.whatsapp_number && (
+            <p className="mt-3 text-[10px] text-[#25D366] tracking-widest uppercase font-bold">
+              ✓ Active: {settings.whatsapp_number}
+            </p>
+          )}
+        </div>
+
+        {/* Categories Manager */}
+        <div className="border border-white/10 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Tag className="w-4 h-4 text-white/70" />
+              <h3 className="font-display text-sm font-black uppercase tracking-[0.15em]">
+                Categories ({categories.length})
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const n = prompt("New category name?");
+                if (n?.trim()) await createCategory(n.trim());
+              }}
+              data-testid="admin-add-category"
+              className="border border-white/20 px-3 py-1.5 text-[10px] tracking-[0.25em] uppercase font-bold hover:bg-white/5 inline-flex items-center gap-1.5"
+            >
+              <Plus className="w-3 h-3" /> Add
+            </button>
+          </div>
+          {categories.length === 0 ? (
+            <p className="text-[11px] text-white/40">No categories yet. Add one to get started.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((c) => (
+                <span
+                  key={c.id}
+                  data-testid={`admin-category-${c.id}`}
+                  className="inline-flex items-center gap-1.5 border border-white/15 bg-white/[0.03] px-2.5 py-1 text-[10px] tracking-[0.2em] uppercase font-bold"
+                >
+                  {c.name}
+                  <button
+                    type="button"
+                    onClick={() => deleteCategory(c)}
+                    data-testid={`admin-category-del-${c.id}`}
+                    className="text-white/40 hover:text-[#FF2A2A] ml-1"
+                    aria-label="Remove"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Add button row */}
       <div className="px-6 lg:px-10 py-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -297,6 +425,8 @@ export default function AdminDashboard() {
               submitting={submitting}
               collections={collections}
               onCollectionCreate={createCollection}
+              categories={categories}
+              onCategoryCreate={createCategory}
             />
           </div>
         </div>

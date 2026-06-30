@@ -179,6 +179,18 @@ class Collection(BaseModel):
     name: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class CategoryCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+
+class Category(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SettingsUpdate(BaseModel):
+    whatsapp_number: Optional[str] = None
+    brand_name: Optional[str] = None
+
 class ItemBase(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     price: float = Field(ge=0)
@@ -348,6 +360,69 @@ async def delete_collection(col_id: str, current=Depends(get_current_admin)):
     return {"ok": True}
 
 
+# ----- Categories -----
+DEFAULT_CATEGORIES = ["bedsheet", "carpet", "doormat", "sofa cover", "quilt", "pouffee"]
+
+
+@api_router.get("/categories")
+async def list_categories_public():
+    rows = await db.categories.find({}, {"_id": 0}).sort("name", 1).to_list(500)
+    return rows
+
+
+@api_router.post("/admin/categories")
+async def create_category(payload: CategoryCreate, current=Depends(get_current_admin)):
+    name = payload.name.strip().lower()
+    existing = await db.categories.find_one({"name": name})
+    if existing:
+        existing.pop("_id", None)
+        return existing
+    cat = Category(name=name)
+    doc = cat.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.categories.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+
+@api_router.delete("/admin/categories/{cat_id}")
+async def delete_category(cat_id: str, current=Depends(get_current_admin)):
+    result = await db.categories.delete_one({"id": cat_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"ok": True}
+
+
+# ----- Settings (WhatsApp number, brand name, etc.) -----
+@api_router.get("/settings")
+async def get_settings_public():
+    doc = await db.settings.find_one({"id": "global"}, {"_id": 0}) or {}
+    return {
+        "whatsapp_number": doc.get("whatsapp_number", ""),
+        "brand_name": doc.get("brand_name", "Mohey Home"),
+    }
+
+
+@api_router.patch("/admin/settings")
+async def update_settings(payload: SettingsUpdate, current=Depends(get_current_admin)):
+    update = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None}
+    if not update:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    # Sanitize whatsapp number: keep digits and leading +
+    if "whatsapp_number" in update:
+        raw = update["whatsapp_number"].strip()
+        cleaned = "".join(ch for ch in raw if ch.isdigit() or ch == "+")
+        if cleaned and not cleaned.startswith("+"):
+            cleaned = "+" + cleaned
+        update["whatsapp_number"] = cleaned
+    update["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.settings.update_one({"id": "global"}, {"$set": update}, upsert=True)
+    doc = await db.settings.find_one({"id": "global"}, {"_id": 0}) or {}
+    return {
+        "whatsapp_number": doc.get("whatsapp_number", ""),
+        "brand_name": doc.get("brand_name", "Mohey Home"),
+    }
+
+
 # ----- Routes: Uploads & AI -----
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024  # 12 MB
@@ -455,6 +530,17 @@ async def startup_event():
     await db.users.create_index("email", unique=True)
     await db.items.create_index("created_at")
     await db.files.create_index("storage_path")
+    await db.categories.create_index("name", unique=True)
+    # Seed default categories if collection is empty
+    cat_count = await db.categories.count_documents({})
+    if cat_count == 0:
+        for name in DEFAULT_CATEGORIES:
+            await db.categories.insert_one({
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
+        logger.info(f"Seeded {len(DEFAULT_CATEGORIES)} default categories")
     try:
         init_storage()
         logger.info("Storage initialized")

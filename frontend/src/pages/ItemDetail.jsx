@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api, BACKEND_URL } from "@/lib/api";
 import { Logo } from "@/components/Logo";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageCircle } from "lucide-react";
 
 const PH = "https://images.unsplash.com/photo-1631125915732-b98f8774f675?w=900&q=80";
 const resolve = (u) => !u ? PH : u.startsWith("http") ? u : u.startsWith("/api/") ? `${BACKEND_URL}${u}` : u;
@@ -10,6 +10,7 @@ const resolve = (u) => !u ? PH : u.startsWith("http") ? u : u.startsWith("/api/"
 export default function ItemDetail() {
   const { id } = useParams();
   const [item, setItem] = useState(null);
+  const [settings, setSettings] = useState({ whatsapp_number: "", brand_name: "Mohey Home" });
   const [activeIdx, setActiveIdx] = useState(0);
   const [view, setView] = useState("studio");
 
@@ -18,6 +19,7 @@ export default function ItemDetail() {
       const found = r.data.items.find((i) => i.id === id);
       setItem(found || false);
     });
+    api.get("/settings").then((r) => setSettings(r.data)).catch(() => {});
   }, [id]);
 
   if (item === null) return <div className="min-h-screen grid place-items-center text-xs tracking-[0.3em] uppercase">Loading…</div>;
@@ -37,6 +39,30 @@ export default function ItemDetail() {
   const hasLifestyle = !!item.lifestyle_image_url;
   const mainImg = view === "lifestyle" && hasLifestyle ? lifestyle : studio;
   const activeStock = colors.length > 0 ? (colors[activeIdx]?.stock ?? 0) : item.stock;
+
+  // Build WhatsApp deep link
+  const buildWhatsAppLink = () => {
+    const phone = (settings.whatsapp_number || "").replace(/\D/g, "");
+    if (!phone) return "";
+    const productUrl = `${window.location.origin}/p/${item.id}`;
+    const imgUrl = mainImg && mainImg.startsWith("http") ? mainImg : `${window.location.origin}${item.image_url || ""}`;
+    const activeColor = colors[activeIdx]?.name;
+    const lines = [
+      `Hi ${settings.brand_name || "Mohey Home"}!`,
+      `I'd like to order this product:`,
+      ``,
+      `📦 *${item.name}*`,
+      `💰 Price: ₹${Number(item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`,
+    ];
+    if (item.category) lines.push(`🏷️ Category: ${item.category}`);
+    if (activeColor) lines.push(`🎨 Color: ${activeColor}`);
+    lines.push(``, `🔗 ${productUrl}`);
+    if (imgUrl) lines.push(`🖼️ Photo: ${imgUrl}`);
+    lines.push(``, `Please share availability and delivery details. Thanks!`);
+    const text = encodeURIComponent(lines.join("\n"));
+    return `https://wa.me/${phone}?text=${text}`;
+  };
+  const whatsappLink = buildWhatsAppLink();
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-[#0A0A0A]">
@@ -84,6 +110,30 @@ export default function ItemDetail() {
             <span className="text-[10px] tracking-[0.3em] uppercase font-bold">{activeStock} in stock</span>
             <span className="text-[10px] tracking-[0.3em] uppercase font-bold text-[#FF2A2A]">Available now</span>
           </div>
+
+          {/* WhatsApp Order CTA */}
+          {whatsappLink ? (
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="whatsapp-order-button"
+              className="group relative inline-flex items-center justify-center gap-3 bg-[#25D366] text-white px-6 py-4 font-bold uppercase tracking-[0.2em] text-xs hover:bg-[#1FAE53] transition-colors shadow-lg shadow-[#25D366]/20"
+            >
+              <MessageCircle className="w-5 h-5" fill="currentColor" />
+              <span>Order on WhatsApp</span>
+              <span className="absolute -top-2 -right-2 bg-[#0A0A0A] text-white text-[8px] tracking-[0.2em] uppercase font-black px-2 py-0.5 rounded-full border-2 border-[#25D366]">
+                Fastest
+              </span>
+            </a>
+          ) : (
+            <div data-testid="whatsapp-disabled" className="border border-dashed border-[#0A0A0A]/20 px-4 py-3 text-[10px] tracking-[0.25em] uppercase font-bold text-[#0A0A0A]/40 text-center">
+              Order line coming soon
+            </div>
+          )}
+          <p className="text-[10px] text-[#0A0A0A]/50 leading-relaxed -mt-3">
+            Opens WhatsApp with the product details &amp; photo link pre-filled. Tap send to place your order.
+          </p>
         </div>
       </div>
     </div>

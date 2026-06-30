@@ -3,8 +3,6 @@ import { BACKEND_URL, getToken } from "@/lib/api";
 import { toast } from "sonner";
 import { Upload, Loader2, ImageIcon, Plus, X, Palette } from "lucide-react";
 
-const PRODUCT_TYPES = ["bedsheet", "carpet", "doormat", "sofa cover", "quilt", "pouffee"];
-
 function resolveImageUrl(u) {
   if (!u) return "";
   if (u.startsWith("http") || u.startsWith("blob:") || u.startsWith("data:")) return u;
@@ -69,13 +67,13 @@ function ImageDropzone({ preview, busy, dragOver, setDragOver, onPick, onDrop, t
   );
 }
 
-export function ItemForm({ initial, onCancel, onSubmit, submitting, collections = [], onCollectionCreate }) {
+export function ItemForm({ initial, onCancel, onSubmit, submitting, collections = [], onCollectionCreate, categories = [], onCategoryCreate }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [lifestyleUrl, setLifestyleUrl] = useState("");
-  const [category, setCategory] = useState("bedsheet");
+  const [category, setCategory] = useState("");
   const [collectionId, setCollectionId] = useState("");
   const [manualSoldOut, setManualSoldOut] = useState(false);
   const [uploadingMain, setUploadingMain] = useState(false);
@@ -93,7 +91,7 @@ export function ItemForm({ initial, onCancel, onSubmit, submitting, collections 
     setStock(initial?.stock ?? "");
     setImageUrl(initial?.image_url || "");
     setLifestyleUrl(initial?.lifestyle_image_url || "");
-    setCategory(initial?.category || "bedsheet");
+    setCategory(initial?.category || "");
     setCollectionId(initial?.collection_id || "");
     setManualSoldOut(initial?.manual_sold_out || false);
     setColors(Array.isArray(initial?.colors) ? initial.colors : []);
@@ -280,15 +278,39 @@ export function ItemForm({ initial, onCancel, onSubmit, submitting, collections 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-[10px] tracking-[0.3em] uppercase font-bold text-white/60 mb-2">Category</label>
-          <input data-testid="item-form-category" list="cat-list" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Type or pick" className="w-full bg-[#0A0A0A] border border-white/15 focus:border-white outline-none py-2.5 px-3 text-[11px] uppercase tracking-wider" />
-          <datalist id="cat-list">{PRODUCT_TYPES.map((p) => <option key={p} value={p} />)}</datalist>
+          <div className="flex gap-1">
+            <select
+              data-testid="item-form-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="flex-grow bg-[#0A0A0A] text-white border border-white/15 focus:border-white outline-none py-2.5 px-2 text-[11px] uppercase tracking-wider cursor-pointer"
+            >
+              <option value="" className="bg-[#0A0A0A] text-white">— select —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.name} className="bg-[#0A0A0A] text-white">{c.name}</option>
+              ))}
+            </select>
+            {onCategoryCreate && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const n = prompt("New category name?");
+                  if (!n?.trim()) return;
+                  const created = await onCategoryCreate(n.trim());
+                  if (created?.name) setCategory(created.name);
+                }}
+                data-testid="new-category-button"
+                className="border border-white/20 px-3 hover:bg-white/5 text-lg text-white"
+              >+</button>
+            )}
+          </div>
         </div>
         <div>
           <label className="block text-[10px] tracking-[0.3em] uppercase font-bold text-white/60 mb-2">Collection</label>
           <div className="flex gap-1">
-            <select data-testid="item-form-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)} className="flex-grow bg-[#0A0A0A] border border-white/15 focus:border-white outline-none py-2.5 px-2 text-[11px] uppercase tracking-wider">
-              <option value="">— none —</option>
-              {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <select data-testid="item-form-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)} className="flex-grow bg-[#0A0A0A] text-white border border-white/15 focus:border-white outline-none py-2.5 px-2 text-[11px] uppercase tracking-wider cursor-pointer">
+              <option value="" className="bg-[#0A0A0A] text-white">— none —</option>
+              {collections.map((c) => <option key={c.id} value={c.id} className="bg-[#0A0A0A] text-white">{c.name}</option>)}
             </select>
             {onCollectionCreate && (
               <button type="button" onClick={async () => {
@@ -296,7 +318,7 @@ export function ItemForm({ initial, onCancel, onSubmit, submitting, collections 
                 if (!n?.trim()) return;
                 const created = await onCollectionCreate(n.trim());
                 if (created?.id) setCollectionId(created.id);
-              }} data-testid="new-collection-button" className="border border-white/20 px-3 hover:bg-white/5 text-lg">+</button>
+              }} data-testid="new-collection-button" className="border border-white/20 px-3 hover:bg-white/5 text-lg text-white">+</button>
             )}
           </div>
         </div>
