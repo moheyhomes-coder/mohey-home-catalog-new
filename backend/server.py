@@ -425,14 +425,14 @@ async def update_settings(payload: SettingsUpdate, current=Depends(get_current_a
 
 # ----- Routes: Uploads & AI -----
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
-MAX_UPLOAD_BYTES = 12 * 1024 * 1024  # 12 MB
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 
 
 @api_router.post("/admin/upload")
 async def upload_image(file: UploadFile = File(...), current=Depends(get_current_admin)):
     data = await file.read()
     if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 12MB)")
+        raise HTTPException(status_code=413, detail="File too large (max 100MB)")
     ctype = file.content_type or "application/octet-stream"
     if ctype not in ALLOWED_IMAGE_TYPES and not (file.filename or "").lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
         raise HTTPException(status_code=400, detail="Only JPG/PNG/WEBP images allowed")
