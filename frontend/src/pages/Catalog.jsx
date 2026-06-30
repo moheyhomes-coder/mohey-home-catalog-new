@@ -55,7 +55,7 @@ export default function Catalog() {
       setItems(itemsRes.data.items);
       setCollections(colRes.data || []);
       setUpdatedAt(itemsRes.data.updated_at);
-    } catch (_) { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.warn("Catalog fetch failed:", err?.message || err); } finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -68,21 +68,21 @@ export default function Catalog() {
         wsRef.current = ws;
         ws.onopen = () => setWsLive(true);
         ws.onclose = () => { setWsLive(false); retryTimer = setTimeout(connect, 3000); };
-        ws.onerror = () => { try { ws.close(); } catch (_) { /* ignore */ } };
+        ws.onerror = (err) => { console.warn("WebSocket error", err); try { ws.close(); } catch (_) { /* socket already closed */ } };
         ws.onmessage = (evt) => {
           try {
             const m = JSON.parse(evt.data);
             if (m.type === "ping" || m.type === "hello") return;
             if (m.type && m.type.startsWith("item.")) fetchAll(true);
-          } catch (_) { /* ignore */ }
+          } catch (err) { console.warn("WebSocket message parse failed", err); }
         };
-      } catch (_) { retryTimer = setTimeout(connect, 3000); }
+      } catch (err) { console.warn("WebSocket connect failed, retrying", err); retryTimer = setTimeout(connect, 3000); }
     };
     connect();
     return () => {
       clearInterval(pollId);
       if (retryTimer) clearTimeout(retryTimer);
-      try { wsRef.current && wsRef.current.close(); } catch (_) { /* ignore */ }
+      try { wsRef.current && wsRef.current.close(); } catch (err) { console.warn("WS close failed", err); }
     };
   }, []);
 

@@ -78,7 +78,7 @@ export function ItemCard({ item, index = 0, backendUrl = "" }) {
             <div className="flex items-center gap-1.5">
               {colors.map((c, i) => (
                 <button
-                  key={i}
+                  key={c.name || c.hex || `swatch-${i}`}
                   type="button"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveIdx(i); setLoaded(false); }}
                   data-testid={`swatch-${item.id}-${i}`}

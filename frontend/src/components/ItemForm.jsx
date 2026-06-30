@@ -21,7 +21,7 @@ async function uploadFile(file) {
   });
   if (!res.ok) {
     let detail = "Upload failed";
-    try { detail = (await res.json()).detail || detail; } catch (_) { /* ignore */ }
+    try { detail = (await res.json()).detail || detail; } catch (err) { console.warn("Non-JSON error response", err); }
     throw new Error(detail);
   }
   return res.json();

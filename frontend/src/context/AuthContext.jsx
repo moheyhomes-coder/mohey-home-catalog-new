@@ -33,7 +33,9 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await api.post("/auth/logout");
-    } catch (_) {}
+    } catch (err) {
+      console.warn("Logout request failed (clearing client state anyway):", err?.message || err);
+    }
     clearToken();
     setUser(false);
   };

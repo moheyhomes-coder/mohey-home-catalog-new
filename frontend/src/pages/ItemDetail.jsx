@@ -98,7 +98,7 @@ export default function ItemDetail() {
               </p>
               <div className="flex items-center gap-2 flex-wrap">
                 {colors.map((c, i) => (
-                  <button key={i} data-testid={`detail-swatch-${i}`} onClick={() => setActiveIdx(i)} title={c.name}
+                  <button key={c.name || c.hex || `swatch-${i}`} data-testid={`detail-swatch-${i}`} onClick={() => setActiveIdx(i)} title={c.name}
                     className={`w-9 h-9 rounded-full border-2 ${i===activeIdx?"border-[#0A0A0A] scale-110":"border-[#0A0A0A]/20"}`}
                     style={{ background: c.hex }} />
                 ))}
