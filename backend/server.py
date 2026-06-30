@@ -11,6 +11,8 @@ import logging
 import bcrypt
 import jwt
 import requests
+import cloudinary
+import cloudinary.uploader
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Set, List
 
@@ -30,11 +32,10 @@ db = client[os.environ['DB_NAME']]
 
 JWT_SECRET = os.environ['JWT_SECRET']
 JWT_ALGORITHM = "HS256"
-EMERGENT_KEY = os.environ.get('EMERGENT_LLM_KEY')
-STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
 APP_NAME = "catalog-live"
 
-storage_key: Optional[str] = None
+# Cloudinary config — reads CLOUDINARY_URL env var automatically
+cloudinary.config(cloudinary_url=os.environ.get('CLOUDINARY_URL'))
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -110,49 +111,16 @@ async def get_current_admin(request: Request) -> dict:
 
 
 # ----- Storage helpers -----
-def init_storage() -> str:
-    global storage_key
-    if storage_key:
-        return storage_key
-    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
-    resp.raise_for_status()
-    storage_key = resp.json()["storage_key"]
-    return storage_key
-
-
 def put_object(path: str, data: bytes, content_type: str) -> dict:
-    key = init_storage()
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data, timeout=120,
+    public_id = path.replace("/", "_").rsplit(".", 1)[0]
+    result = cloudinary.uploader.upload(
+        data,
+        public_id=public_id,
+        folder=APP_NAME,
+        resource_type="image",
+        overwrite=True,
     )
-    if resp.status_code == 403:
-        # Re-init and retry once
-        global storage_key
-        storage_key = None
-        key = init_storage()
-        resp = requests.put(
-            f"{STORAGE_URL}/objects/{path}",
-            headers={"X-Storage-Key": key, "Content-Type": content_type},
-            data=data, timeout=120,
-        )
-    resp.raise_for_status()
-    return resp.json()
-
-
-def get_object(path: str):
-    key = init_storage()
-    resp = requests.get(f"{STORAGE_URL}/objects/{path}",
-                       headers={"X-Storage-Key": key}, timeout=60)
-    if resp.status_code == 403:
-        global storage_key
-        storage_key = None
-        key = init_storage()
-        resp = requests.get(f"{STORAGE_URL}/objects/{path}",
-                           headers={"X-Storage-Key": key}, timeout=60)
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+    return {"path": result["public_id"], "url": result["secure_url"], "size": result.get("bytes")}
 
 
 # ----- Models -----
@@ -446,6 +414,7 @@ async def upload_image(file: UploadFile = File(...), current=Depends(get_current
     await db.files.insert_one({
         "id": str(uuid.uuid4()),
         "storage_path": result["path"],
+        "public_url": result["url"],
         "original_filename": file.filename,
         "content_type": ctype,
         "size": result.get("size"),
@@ -453,25 +422,20 @@ async def upload_image(file: UploadFile = File(...), current=Depends(get_current
         "is_deleted": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
-    public_url = f"/api/files/{result['path']}"
-    return {"path": result["path"], "url": public_url}
+    return {"path": result["path"], "url": result["url"]}
 
 
 @api_router.get("/files/{path:path}")
 async def serve_file(path: str):
-    """Public file serving — catalog images need to be visible to everyone."""
+    """Redirect to Cloudinary public URL."""
+    from fastapi.responses import RedirectResponse
     record = await db.files.find_one({"storage_path": path, "is_deleted": False})
     if not record:
         raise HTTPException(status_code=404, detail="File not found")
-    try:
-        data, content_type = get_object(path)
-    except Exception:
+    public_url = record.get("public_url")
+    if not public_url:
         raise HTTPException(status_code=404, detail="File not found")
-    return Response(
-        content=data,
-        media_type=record.get("content_type", content_type),
-        headers={"Cache-Control": "public, max-age=86400"},
-    )
+    return RedirectResponse(url=public_url, status_code=301)
 
 
 # ----- WebSocket -----
