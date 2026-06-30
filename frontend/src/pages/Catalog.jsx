@@ -170,26 +170,26 @@ export default function Catalog() {
       </section>
 
       {/* Filters bar */}
-      <section className="border-b border-[#0A0A0A] px-6 lg:px-12 py-4 flex items-center gap-3 flex-wrap" data-testid="filters-bar">
+      <section className="bg-[#0A0A0A] text-white px-6 lg:px-12 py-4 flex items-center gap-3 flex-wrap" data-testid="filters-bar">
         <div className="relative flex-grow min-w-[200px] max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#0A0A0A]/40" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input
             data-testid="filter-search"
             placeholder="Search by name or category…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent border border-[#0A0A0A] pl-10 pr-3 py-2.5 text-sm outline-none focus:bg-[#F4F4F2]"
+            className="w-full bg-transparent border border-white/30 text-white placeholder-white/40 pl-10 pr-3 py-2.5 text-sm outline-none focus:border-white"
           />
         </div>
-        <select data-testid="filter-category" value={category} onChange={(e) => setCategory(e.target.value)} className="bg-transparent border border-[#0A0A0A] py-2.5 px-3 text-[11px] uppercase tracking-wider font-bold">
-          {dynamicCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+        <select data-testid="filter-category" value={category} onChange={(e) => setCategory(e.target.value)} className="bg-[#0A0A0A] text-white border border-white/30 hover:border-white py-2.5 px-3 text-[11px] uppercase tracking-wider font-bold focus:outline-none focus:border-white cursor-pointer">
+          {dynamicCategories.map((c) => <option key={c} value={c} className="bg-[#0A0A0A] text-white">{c}</option>)}
         </select>
-        <select data-testid="filter-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)} className="bg-transparent border border-[#0A0A0A] py-2.5 px-3 text-[11px] uppercase tracking-wider font-bold">
-          <option value="all">All Collections</option>
-          {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        <select data-testid="filter-collection" value={collectionId} onChange={(e) => setCollectionId(e.target.value)} className="bg-[#0A0A0A] text-white border border-white/30 hover:border-white py-2.5 px-3 text-[11px] uppercase tracking-wider font-bold focus:outline-none focus:border-white cursor-pointer">
+          <option value="all" className="bg-[#0A0A0A] text-white">All Collections</option>
+          {collections.map((c) => <option key={c.id} value={c.id} className="bg-[#0A0A0A] text-white">{c.name}</option>)}
         </select>
-        <select data-testid="filter-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-transparent border border-[#0A0A0A] py-2.5 px-3 text-[11px] uppercase tracking-wider font-bold">
-          {SORTS.map((s) => <option key={s.id} value={s.id}>Sort: {s.label}</option>)}
+        <select data-testid="filter-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-[#0A0A0A] text-white border border-white/30 hover:border-white py-2.5 px-3 text-[11px] uppercase tracking-wider font-bold focus:outline-none focus:border-white cursor-pointer">
+          {SORTS.map((s) => <option key={s.id} value={s.id} className="bg-[#0A0A0A] text-white">Sort: {s.label}</option>)}
         </select>
       </section>
 

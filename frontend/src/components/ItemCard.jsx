@@ -66,7 +66,7 @@ export function ItemCard({ item, index = 0, backendUrl = "" }) {
             {item.name}
           </h3>
           <span data-testid={`item-price-${item.id}`} className="font-mono-px text-base tabular-nums whitespace-nowrap">
-            ${Number(item.price).toFixed(2)}
+            ₹{Number(item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
           </span>
         </div>
 

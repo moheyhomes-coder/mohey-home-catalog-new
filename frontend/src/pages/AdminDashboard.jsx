@@ -229,7 +229,7 @@ export default function AdminDashboard() {
                           <span className="font-medium">{item.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-mono-px tabular-nums">${Number(item.price).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-mono-px tabular-nums">₹{Number(item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                       <td className="px-4 py-3 text-right font-mono-px tabular-nums">{item.stock}</td>
                       <td className="px-4 py-3 text-center">
                         <button

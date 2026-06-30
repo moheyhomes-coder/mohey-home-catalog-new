@@ -63,7 +63,7 @@ export default function ItemDetail() {
         <div className="p-6 sm:p-10 lg:p-16 flex flex-col gap-6">
           {item.category && <p className="text-[10px] tracking-[0.3em] uppercase font-bold text-[#0A0A0A]/60">{item.category}</p>}
           <h1 data-testid="detail-name" className="font-display text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter leading-[0.9]">{item.name}</h1>
-          <p data-testid="detail-price" className="font-mono-px text-2xl tabular-nums">${Number(item.price).toFixed(2)}</p>
+          <p data-testid="detail-price" className="font-mono-px text-2xl tabular-nums">₹{Number(item.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
 
           {colors.length > 0 && (
             <div data-testid="detail-swatches">

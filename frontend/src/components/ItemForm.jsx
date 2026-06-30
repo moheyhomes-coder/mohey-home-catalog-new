@@ -260,7 +260,7 @@ export function ItemForm({ initial, onCancel, onSubmit, submitting, collections 
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-[10px] tracking-[0.3em] uppercase font-bold text-white/60 mb-2">Price ($)</label>
+          <label className="block text-[10px] tracking-[0.3em] uppercase font-bold text-white/60 mb-2">Price (₹)</label>
           <input
             data-testid="item-form-price" type="number" step="0.01" min="0" required
             value={price} onChange={(e) => setPrice(e.target.value)}
