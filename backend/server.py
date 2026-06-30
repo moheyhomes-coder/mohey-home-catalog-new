@@ -7,9 +7,7 @@ load_dotenv(ROOT_DIR / '.env')
 import os
 import uuid
 import asyncio
-import base64
 import logging
-import json
 import bcrypt
 import jwt
 import requests
@@ -24,7 +22,6 @@ from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
 
 # MongoDB
 mongo_url = os.environ['MONGO_URL']
@@ -36,7 +33,6 @@ JWT_ALGORITHM = "HS256"
 EMERGENT_KEY = os.environ.get('EMERGENT_LLM_KEY')
 STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
 APP_NAME = "catalog-live"
-NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview"
 
 storage_key: Optional[str] = None
 
@@ -384,98 +380,6 @@ async def upload_image(file: UploadFile = File(...), current=Depends(get_current
     })
     public_url = f"/api/files/{result['path']}"
     return {"path": result["path"], "url": public_url}
-
-
-PRODUCT_PROMPTS = {
-    "bedsheet": "a beautifully styled, neatly draped bedsheet on a designer king-size bed",
-    "carpet": "a designer carpet laid flat",
-    "doormat": "a designer doormat",
-    "sofa cover": "a premium sofa cover beautifully fitted on a contemporary 3-seater sofa",
-    "quilt": "a luxurious quilt elegantly folded and draped on a designer bed",
-    "pouffee": "a stylish pouffe",
-}
-
-SCENE_PROMPTS = {
-    "studio": "on a pure white seamless studio cyclorama background, soft even studio lighting from above, no shadows, perfectly centered, e-commerce white-background product photography",
-    "lifestyle": "in a luxurious bright styled interior room (warm wood floors, designer furniture, large window with soft natural daylight), magazine-quality lifestyle interior photography, shallow depth of field",
-    "flatlay": "shot top-down as a flat lay on a neutral textured surface (linen or polished concrete), perfectly framed, soft diffused overhead daylight, premium overhead product photography",
-}
-
-
-@api_router.post("/admin/ai-stylize")
-async def ai_stylize(
-    file: UploadFile = File(...),
-    product_type: str = Form("bedsheet"),
-    scene: str = Form("studio"),
-    target_color: str = Form(""),
-    current=Depends(get_current_admin),
-):
-    if not EMERGENT_KEY:
-        raise HTTPException(status_code=500, detail="AI not configured")
-    data = await file.read()
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 12MB)")
-
-    product_desc = PRODUCT_PROMPTS.get(product_type.lower().strip(), PRODUCT_PROMPTS["bedsheet"])
-    scene_desc = SCENE_PROMPTS.get(scene.lower().strip(), SCENE_PROMPTS["studio"])
-    color_instr = ""
-    if target_color and target_color.strip():
-        color_instr = (
-            f" Recolor the {product_type} to a {target_color.strip()} color while preserving "
-            f"the EXACT pattern, weave, texture, motifs and design from the reference photo. "
-        )
-    prompt = (
-        f"Re-shoot this product as a premium catalog photograph. "
-        f"Preserve the EXACT pattern, texture and design of the {product_type} from the reference photo. "
-        f"{color_instr}"
-        f"Subject: {product_desc}. "
-        f"Scene: {scene_desc}. "
-        f"Output must be a single photorealistic product photograph — bright, crisp, balanced colors, "
-        f"no people, no text, no watermarks, no logos, no clutter. "
-        f"Center the product, premium e-commerce catalog aesthetic."
-    )
-
-    image_b64 = base64.b64encode(data).decode("utf-8")
-    try:
-        chat = LlmChat(
-            api_key=EMERGENT_KEY,
-            session_id=f"stylize-{uuid.uuid4()}",
-            system_message="You are a professional product photographer creating premium catalog imagery.",
-        )
-        chat.with_model("gemini", NANO_BANANA_MODEL).with_params(modalities=["image", "text"])
-        msg = UserMessage(text=prompt, file_contents=[ImageContent(image_b64)])
-        text, images = await chat.send_message_multimodal_response(msg)
-    except Exception as e:
-        logger.exception("AI stylize failed")
-        raise HTTPException(status_code=502, detail=f"AI generation failed: {e}")
-
-    if not images:
-        raise HTTPException(status_code=502, detail="AI returned no image")
-
-    gen = images[0]
-    gen_bytes = base64.b64decode(gen["data"])
-    mime = gen.get("mime_type") or "image/png"
-    ext = "png" if "png" in mime else "jpg"
-    path = f"{APP_NAME}/uploads/{current['id']}/ai-{uuid.uuid4()}.{ext}"
-    try:
-        result = put_object(path, gen_bytes, mime)
-    except Exception as e:
-        logger.exception("Save AI image failed")
-        raise HTTPException(status_code=500, detail=f"Save failed: {e}")
-
-    await db.files.insert_one({
-        "id": str(uuid.uuid4()),
-        "storage_path": result["path"],
-        "original_filename": f"ai-{product_type}.{ext}",
-        "content_type": mime,
-        "size": result.get("size"),
-        "uploaded_by": current["id"],
-        "ai_generated": True,
-        "product_type": product_type,
-        "is_deleted": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
-    return {"path": result["path"], "url": f"/api/files/{result['path']}"}
 
 
 @api_router.get("/files/{path:path}")
